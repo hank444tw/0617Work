@@ -1,0 +1,430 @@
+﻿@model IEnumerable<_0617Work.Models.csvData>
+
+@{
+    //ViewBag.Title = "NFU";
+    //Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+
+    <style>
+        .bg {
+            position:fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            z-index: -999;
+        }
+
+        .bg img {
+            min-height: 100%;
+            width: 100%;
+            opacity: 0.4;
+            z-index: -1; /*-1 可以當背景*/
+        }
+    </style>
+
+    <style>
+        body {
+            font-family: Microsoft JhengHei;
+        }
+
+        #wrapper {
+            /*background-color:#fbf8f8;*/
+            margin: 120px auto;
+            padding: 30px 50px;
+            border: 2px solid lightblue;
+            border-radius: 10px;
+            box-shadow: 5px 5px #888888;
+        }
+
+        h1 {
+            margin-bottom: 50px;
+        }
+    </style>
+    <title></title>
+</head>
+<body>
+    <!--背景-->
+    <div class="bg">
+        <img src="~/Image/backgroud.jpg">
+    </div>
+
+    <!--等待畫面-->
+    <div id="divProgress" style="text-align:center; display: none; position: fixed; top: 50%;  left: 50%;">
+        <img id="imgLoading" src="~/Image/loading.gif" />
+        <br />
+        <h3 class="text-primary">處理中...</h3>
+    </div>
+    <div id="divMaskFrame" style="background-color: #F2F4F7; display: none; left: 0px;position: absolute; top: 0px;"></div>
+
+    <!--Main-->
+    <div class="container">
+        <div id="wrapper">
+
+            <div class="form-group row">
+                <h1 class="col text-center">★折線圖產生器★</h1>
+            </div>
+
+            <!--進度條-->
+            <div class="progress" style="height:25px">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" style="width:@Session["bar"].ToString()%">
+                    @Session["barText"]
+                </div>
+            </div>
+
+            <hr />
+            <div class="form-group row"></div>
+
+            @if ((int)Session["progress"] == 1) //上傳CSV檔
+            {
+                <form method="POST" action="@Url.RouteUrl("Index")" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+
+                    <div class="form-group row justify-content-center">
+                            <input type="file" name="file" value="選擇檔案" style="margin-left:100px"/>
+                    </div>
+
+                    <div class="form-group row justify-content-center">
+                        <input type="submit" class="btn btn-warning" value="上傳" onclick="ShowProgressBar()" />
+                    </div>
+                </form>
+            }
+            else if ((int)Session["progress"] == 2) //設定圖表參數
+            {
+                int dataNumber = 1;
+                <form method="post" action="@Url.Action("makeImage")">
+                    <div class="form-horizontal">
+
+                        <div class="form-group row">
+                            <h5 style="font-weight:600">圖表標題</h5>
+                            <div class="col-md-12"></div>
+                            @foreach (var item in Model)
+                            {
+                                <div class="col-md-6">
+                                    <input type="text" name="title" class="form-control" value="@item.fileName.Replace(".csv", "")" />
+                                </div>
+                                if ((int)Session["progress"] == 2)
+                                {
+                                    break;
+                                }
+                            }
+                            <label style="margin-left:15px;padding-top:5px">文字大小</label>
+                            <div class="col-md-2">
+                                <select name="titleSize" class="form-control">
+                                    @for (int x = 10; x <= 30; x = x + 2)
+                                    {
+                                        if (x == 20)
+                                        {
+                                            <option value="@x.ToString()" selected>@x.ToString()</option>
+                                            continue;
+                                        }
+                                        <option value="@x.ToString()">@x.ToString()</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <hr />
+
+                        <div class="form-group row">
+                            <h5 style="font-weight:600">X軸</h5>
+                            <div class="col-md-10"></div>
+                            <div class="col-md-3">
+                                <select name="xAxis" class="form-control" id="xAxis" onclick="getval(this);">
+                                    @foreach (var item in Model)
+                                    {
+                                        <option value="@item.csvIndex">@item.csvIndex</option>
+                                    }
+                                </select>
+                            </div>
+                            <label style="margin-left:15px;padding-top:5px">標題</label>
+                            <div class="col-md-3">
+                                <input type="text" name="xTitle" id="xTitle" class="form-control" value="" />
+                            </div>
+                            <label style="margin-left:15px;padding-top:5px">文字大小</label>
+                            <div class="col-md-2">
+                                <select name="xTitleSize" class="form-control">
+                                    @for (int x = 10; x <= 30; x = x + 2)
+                                    {
+                                        if (x == 16)
+                                        {
+                                            <option value="@x.ToString()" selected>@x.ToString()</option>
+                                            continue;
+                                        }
+                                        <option value="@x.ToString()">@x.ToString()</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <hr />
+
+                        <div class="form-group row">
+                            <h5 style="font-weight:600">Y軸</h5>
+                            <div class="col-md-12"></div>
+                            <label style="margin-left:15px;padding-top:5px">標題</label>
+                            <div class="col-md-3">
+                                <input type="text" name="yTitle" class="form-control" value="數量" />
+                            </div>
+                            <label style="margin-left:15px;padding-top:5px">文字大小</label>
+                            <div class="col-md-2">
+                                <select name="yTitleSize" class="form-control">
+                                    @for (int x = 10; x <= 30; x = x + 2)
+                                    {
+                                        if (x == 16)
+                                        {
+                                            <option value="@x.ToString()" selected>@x.ToString()</option>
+                                            continue;
+                                        }
+                                        <option value="@x.ToString()">@x.ToString()</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <hr />
+
+                        <div class="form-group row">
+                            <h5 style="font-weight:600">Data</h5>
+                            <div class="col-md-12"></div>
+                            <div style="margin-right:20px"></div>
+                            @foreach (var item in Model)
+                            {
+                                <div class="form-check-inline">
+                                    <label class="form-check-label">
+                                        <input type="checkbox" class="form-check-input" value="@item.csvIndex" onclick="dataColor(this.value)">@item.csvIndex
+                                    </label>
+                                </div>
+                                dataNumber++;
+                            }
+                        </div>
+                        <hr />
+
+                        <div class="form-group row">
+                            <h5 style="font-weight:600">線條顏色</h5>
+                            <div class="col-md-12"></div>
+                            <div id="dataColorList" class="col-md-12">
+                                <!--線條顏色選取區-->
+                            </div>
+                        </div>
+                        <hr />
+
+                        <div class="form-group row">
+                            <h5 style="font-weight:600">xy軸刻度文字大小</h5>
+                            <div class="col-md-12"></div>
+                            <div class="col-md-2">
+                                <select name="xyfontsize" class="form-control">
+                                    @for (int x = 8; x <= 30; x = x + 2)
+                                    {
+                                        if (x == 14)
+                                        {
+                                            <option value="@x.ToString()" selected>@x.ToString()</option>
+                                            continue;
+                                        }
+                                        <option value="@x.ToString()">@x.ToString()</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <hr />
+
+                        <div class="form-group row">
+                            <h5 style="font-weight:600">圖示大小</h5>
+                            <div class="col-md-12"></div>
+                            <div class="col-md-2">
+                                <select name="legendSize" class="form-control">
+                                    @for (int x = 6; x <= 30; x = x + 2)
+                                    {
+                                        if (x == 14)
+                                        {
+                                            <option value="@x.ToString()" selected>@x.ToString()</option>
+                                            continue;
+                                        }
+                                        <option value="@x.ToString()">@x.ToString()</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <hr />
+
+                        <div class="form-group row">
+                            <h5 style="font-weight:600">圖片長寬</h5>
+                            <div class="col-md-12"></div>
+                            <label style="margin-left:15px;padding-top:5px">寬度</label>
+                            <div class="col-md-2">
+                                <select name="width" class="form-control">
+                                    @for (int x = 10; x <= 20; x++)
+                                    {
+                                        if (x == 15)
+                                        {
+                                            <option value="@x.ToString()" selected>@x.ToString()</option>
+                                            continue;
+                                        }
+                                        <option value="@x.ToString()">@x.ToString()</option>
+                                    }
+                                </select>
+                            </div>
+                            &ensp;&ensp;
+                            <label style="margin-left:15px;padding-top:5px">高度</label>
+                            <div class="col-md-2">
+                                <select name="height" class="form-control">
+                                    @for (int x = 3; x <= 10; x++)
+                                    {
+                                        if (x == 6)
+                                        {
+                                            <option value="@x.ToString()" selected>@x.ToString()</option>
+                                            continue;
+                                        }
+                                        <option value="@x.ToString()">@x.ToString()</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <hr />
+
+                        <div class="form-group row">
+                            <h5 style="font-weight:600">格線</h5>
+                            <div class="col-md-12"></div>
+                            <div class="form-check-inline">
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="grid" class="form-check-input" value="true" style="margin-left:15px">是否顯示格線
+                                </label>
+                            </div>
+                        </div>
+                        <hr />
+
+                        <div class="form-group row justify-content-center">
+                            <input type="submit" class="btn btn-warning" value="提交" onclick="ShowProgressBar()"/>
+                        </div>
+
+                    </div>
+                </form>
+            }
+            else if ((int)Session["progress"] == 3)
+            {
+                <form method="post" action="@Url.RouteUrl("downloadImg")">
+                    <div class="form-group row justify-content-center">
+                        <img src="~/Python/file.png" style="max-width:1000px" />
+                    </div>
+                    <div class="form-group row justify-content-center">
+                        <input type="submit" value="下載" class="btn btn-success" />
+                    </div>
+                    <div class="form-group row justify-content-center">
+                        <a href="@Url.RouteUrl("Index")" class="btn btn-primary">回首頁</a>
+                    </div>
+                </form>
+            }
+        </div>
+    </div>
+
+    <!--X軸選項=X軸標題-->
+    <script type="text/javascript">
+        function getval(sel) {
+            var xTitle = document.getElementById("xTitle");
+            xTitle.value = sel.value;
+        }
+    </script>
+
+    <!--Data打勾，顏色選項-->
+    <script type="text/javascript">
+        var show = [];
+        var value;
+        function dataColor(x) {
+            value = x;
+            if (show.indexOf(x) == -1) //判斷打勾的值，有沒有在陣列裡面
+                creatColor();
+            else
+                removeColor();
+        }
+
+        function creatColor() {
+            show.push(value); //將值加入陣列
+            var mid = show.indexOf(value).toString(); //陣列索引值
+            var dad = document.getElementById("dataColorList");
+            //-------------------文字---------------------
+            var text = document.createElement("input");
+            text.setAttribute("id", mid + "text");
+            text.setAttribute("name", "data");
+            text.setAttribute("value", value);
+            text.setAttribute("readonly", "readonly");
+            text.setAttribute("style", "width:70px;border-width:0px;background-color:transparent;text-align:right");
+            //---------------------------------------------
+
+            //-------------------色彩選取器---------------------
+            var color = document.createElement("input");
+            color.setAttribute("type", "color");
+            color.setAttribute("name", "color");
+            color.setAttribute("id", mid);
+            //--------------------------------------------------
+
+            //-------------------中間空格----------------------
+            var space = document.createElement("label");
+            space.textContent = "\u00A0 \u00A0 \u00A0";
+            space.setAttribute("id", mid + "space");
+            //-------------------------------------------------
+            dad.appendChild(text);
+            dad.appendChild(color);
+            dad.appendChild(space);
+        }
+
+        function removeColor() {
+            var mid = show.indexOf(value).toString(); //陣列索引
+            show[mid] = "oops";
+            var dad = document.getElementById("dataColorList");
+            var text = document.getElementById(mid + "text");
+            var color = document.getElementById(mid);
+            var space = document.getElementById(mid + "space");
+            dad.removeChild(text);
+            dad.removeChild(color);
+            dad.removeChild(space);
+        }
+    </script>
+
+    <script type="text/javascript">
+
+        // 顯示讀取遮罩
+        function ShowProgressBar() {
+            displayProgress();
+            displayMaskFrame();
+        }
+
+        // 隱藏讀取遮罩
+        function HideProgressBar() {
+            var progress = $('#divProgress');
+            var maskFrame = $("#divMaskFrame");
+            progress.hide();
+            maskFrame.hide();
+        }
+        // 顯示讀取畫面
+        function displayProgress() {
+            var w = $(document).width();
+            var h = $(window).height();
+            var progress = $('#divProgress');
+            progress.css({ "z-index": 999999, "top": (h / 2) - (progress.height() / 2), "left": (w / 2) - (progress.width() / 2) });
+            progress.show();
+        }
+        // 顯示遮罩畫面
+        function displayMaskFrame() {
+            var w = $(window).width();
+            var h = $(document).height();
+            var maskFrame = $("#divMaskFrame");
+            maskFrame.css({ "z-index": 999998, "opacity": 0.7, "width": w, "height": h });
+            maskFrame.show();
+        }
+    </script>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <!--<script type="text/javascript" src="~/Script/jquery-3.3.1.min.js" charset="UTF-8"></script>-->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</body>
+</html>
