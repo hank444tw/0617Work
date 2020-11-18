@@ -16,8 +16,8 @@
   |        | 說明 |程式 |
   |------- |:-----|:------:|
   | **前端**   |  1. 只有一個頁面，使用`session`判斷目前在哪個階段。</br>2. 第二階段時，js將後端傳回來的csv欄位資料動態呈現於網頁表單，並讓使用者可動態選取所要的資料和顏色。  |  [程式碼](https://github.com/hank444tw/0617Work/blob/master/0617Work/Views/Home/Index.cshtml) |
-  | **後端**   |  1. 執行`cmd`呼叫python檔案。</br>2. 接收python檔案回傳值，並以串列型態回傳前端。</br>3. 第二階段submit後，將前端資料整理後以cmd形式輸入python檔  |  [程式碼](https://github.com/hank444tw/0617Work/blob/master/0617Work/Controllers/HomeController.cs) |
-  | **python** |  1. 使用`Selenium 3.141`搭配`ChromeDriver`實現網頁自動操作。</br>2. 使用`BeautifulSoup4 4.7.1`針對已搜尋完畢的頁面，第一筆(最便宜)進行爬蟲。  |   [程式碼](https://github.com/hank444tw/0520Work/blob/master/0520Work/Python/0520Work.py) |     
+  | **後端**   |  1. 第一階段submit後，將csv檔下載，並以cmd呼叫python檔案，再接收pyhton檔的回傳值。 </br>2. 第二階段submit後，將前端使用者設定之圖表參數，以cmd形式輸入python檔。  |  [程式碼](https://github.com/hank444tw/0617Work/blob/master/0617Work/Controllers/HomeController.cs) |
+  | **python** |  1. 使用`pandas`獲取csv檔欄位資料，及製作折線圖表。</br>2. 接收C#以cmd傳來的資料，並製作成折線圖表，儲存於Server端。  |   [程式碼](https://github.com/hank444tw/0617Work/blob/master/0617Work/Python/0617Work.py) |     
 
 * 網站截圖
 <img src="https://github.com/hank444tw/0617Work/blob/master/Demo1.JPG" stryle="float:right" />  
